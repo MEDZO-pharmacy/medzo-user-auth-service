@@ -71,6 +71,7 @@ public class AuthServiceTests
         _jwtServiceMock.Verify(service => service.GenerateAccessToken(
             It.Is<IEnumerable<Claim>>(claims =>
                 claims.Any(claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == user.Id.ToString()) &&
+<<<<<<< Updated upstream
                 claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == "User"))), Times.Once);
 =======
                 claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == "Pharmacist"))), Times.Once);
@@ -119,6 +120,7 @@ public class AuthServiceTests
     }
 
     [Fact]
+<<<<<<< Updated upstream
     public async Task RegisterAsync_WithNewUser_ShouldReturnToken()
     {
         var role = new Role { Id = Guid.NewGuid(), Name = "Pharmacist" };
@@ -238,6 +240,7 @@ public class AuthServiceTests
         LastName = "User",
         IsActive = true,
         CreatedAt = DateTime.UtcNow,
+<<<<<<< Updated upstream
         Roles = new List<Role> { new() { Id = Guid.NewGuid(), Name = "User" } }
 =======
         Roles = new List<Role> { new() { Id = "002", Name = "Pharmacist" } }
