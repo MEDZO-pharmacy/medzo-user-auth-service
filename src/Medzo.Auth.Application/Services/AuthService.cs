@@ -10,6 +10,13 @@ namespace Medzo.Auth.Application.Services;
 
 public class AuthService : IAuthService
 {
+    private static readonly HashSet<string> StaffRoles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Admin",
+        "Pharmacist",
+        "InventoryManager"
+    };
+
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IUserRepository _users;
@@ -43,7 +50,7 @@ public class AuthService : IAuthService
         user ??= await _users.GetByUsernameAsync(identifier);
         user ??= await _users.GetByEmailAsync(identifier.ToLowerInvariant());
 
-        if (user is null || !user.IsActive ||
+        if (user is null || !user.IsActive || !CanAccessStaffWebsite(user) ||
             !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
             throw new UnauthorizedAccessException();
@@ -103,7 +110,8 @@ public class AuthService : IAuthService
         var currentToken = await _refreshTokens.GetByHashAsync(HashToken(refreshToken));
         var now = DateTime.UtcNow;
         if (currentToken is null || currentToken.RevokedAt.HasValue ||
-            currentToken.ExpiresAt <= now || !currentToken.User.IsActive)
+            currentToken.ExpiresAt <= now || !currentToken.User.IsActive ||
+            !CanAccessStaffWebsite(currentToken.User))
         {
             throw new InvalidRefreshTokenException();
         }
@@ -173,9 +181,13 @@ public class AuthService : IAuthService
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
     }
 
+    private static bool CanAccessStaffWebsite(User user) =>
+        user.Roles.Any(role => StaffRoles.Contains(role.Name));
+
     private static UserResponse Map(User user) => new()
     {
         Id = user.Id,
+        UserNumber = user.UserNumber,
         Username = user.Username,
         StaffId = user.StaffId,
         Email = user.Email,
