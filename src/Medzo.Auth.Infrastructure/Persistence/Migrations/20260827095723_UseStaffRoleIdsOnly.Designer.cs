@@ -4,6 +4,7 @@ using Medzo.Auth.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Medzo.Auth.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    partial class AuthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260827095723_UseStaffRoleIdsOnly")]
+    partial class UseStaffRoleIdsOnly
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,16 +140,10 @@ namespace Medzo.Auth.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Medzo.Auth.Domain.Entities.Role", b =>
                 {
-<<<<<<< Updated upstream
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-=======
                     b.Property<string>("Id")
                         .HasMaxLength(3)
                         .HasColumnType("nchar(3)")
                         .IsFixedLength();
->>>>>>> Stashed changes
 
                     b.Property<string>("Description")
                         .HasMaxLength(256)
@@ -167,41 +164,21 @@ namespace Medzo.Auth.Infrastructure.Persistence.Migrations
                     b.HasData(
                         new
                         {
-<<<<<<< Updated upstream
-                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
-=======
                             Id = "001",
->>>>>>> Stashed changes
                             Description = "System administrator",
                             Name = "Admin"
                         },
                         new
                         {
-<<<<<<< Updated upstream
-                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
-=======
                             Id = "002",
->>>>>>> Stashed changes
                             Description = "Licensed pharmacist",
                             Name = "Pharmacist"
                         },
                         new
                         {
-<<<<<<< Updated upstream
-                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Description = "Inventory manager",
-                            Name = "InventoryManager"
-                        },
-                        new
-                        {
-                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
-                            Description = "Regular user",
-                            Name = "User"
-=======
                             Id = "003",
                             Description = "Inventory manager",
                             Name = "InventoryManager"
->>>>>>> Stashed changes
                         });
                 });
 
@@ -281,15 +258,12 @@ namespace Medzo.Auth.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
-<<<<<<< Updated upstream
-=======
                     b.Property<int>("UserNumber")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserNumber"));
 
->>>>>>> Stashed changes
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -304,12 +278,9 @@ namespace Medzo.Auth.Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasFilter("[StaffId] IS NOT NULL");
 
-<<<<<<< Updated upstream
-=======
                     b.HasIndex("UserNumber")
                         .IsUnique();
 
->>>>>>> Stashed changes
                     b.HasIndex("Username")
                         .IsUnique();
 
@@ -318,13 +289,8 @@ namespace Medzo.Auth.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("UserRoles", b =>
                 {
-<<<<<<< Updated upstream
-                    b.Property<Guid>("RolesId")
-                        .HasColumnType("uniqueidentifier");
-=======
                     b.Property<string>("RolesId")
                         .HasColumnType("nchar(3)");
->>>>>>> Stashed changes
 
                     b.Property<Guid>("UsersId")
                         .HasColumnType("uniqueidentifier");
