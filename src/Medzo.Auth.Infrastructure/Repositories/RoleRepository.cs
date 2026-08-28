@@ -14,7 +14,7 @@ public class RoleRepository : IRoleRepository
         _context = context;
     }
 
-    public async Task<Role?> GetByIdAsync(Guid id)
+    public async Task<Role?> GetByIdAsync(string id)
     {
         return await _context.Roles.FindAsync(id);
     }

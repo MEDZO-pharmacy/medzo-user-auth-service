@@ -84,8 +84,21 @@ public static class DependencyInjection
 
                     var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
                     var user = await users.GetByIdAsync(userId);
-                    if (user is null || !user.IsActive)
-                        context.Fail("The account is inactive.");
+                    var hasStaffRole = user?.Roles.Any(role =>
+                        role.Name is "Admin" or "Pharmacist" or "InventoryManager") == true;
+                    if (user is null || !user.IsActive || !hasStaffRole)
+                    {
+                        context.Fail("The account is not permitted to access the staff website.");
+                        return;
+                    }
+
+                    var tokenRoles = context.Principal!.FindAll(ClaimTypes.Role)
+                        .Select(claim => claim.Value)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    var currentRoles = user.Roles.Select(role => role.Name)
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                    if (!tokenRoles.SetEquals(currentRoles))
+                        context.Fail("The account permissions have changed. Sign in again.");
                 }
             };
         });

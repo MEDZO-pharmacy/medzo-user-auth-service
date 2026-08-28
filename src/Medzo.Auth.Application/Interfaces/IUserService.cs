@@ -8,6 +8,7 @@ public interface IUserService
     Task<UserResponse?> GetByIdAsync(Guid id);
     Task<IEnumerable<UserResponse>> GetAllAsync();
     Task<UserResponse> UpdateAsync(Guid id, RegisterUserRequest request);
+    Task<UserResponse> UpdateManagedAsync(Guid id, UpdateManagedUserRequest request);
     Task<bool> DeleteAsync(Guid id);
     Task<UserResponse> SetActiveAsync(Guid id, bool isActive);
     Task<StaffInvitationResponse> ApproveStaffIdAsync(StaffInvitationRequest request);

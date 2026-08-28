@@ -80,7 +80,9 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserResponse>> GetAllAsync()
     {
-        return (await _users.GetAllAsync()).Select(Map).ToArray();
+        return (await _users.GetAllAsync())
+            .Select(Map)
+            .ToArray();
     }
 
     public async Task<UserResponse> UpdateAsync(Guid id, RegisterUserRequest request)
@@ -108,6 +110,47 @@ public class UserService : IUserService
         return Map(user);
     }
 
+    public async Task<UserResponse> UpdateManagedAsync(Guid id, UpdateManagedUserRequest request)
+    {
+        var user = await _users.GetByIdAsync(id) ?? throw new KeyNotFoundException();
+        if (user.Roles.Any(role => role.Name == "Admin"))
+            throw new InvalidOperationException("Admin accounts cannot be modified from the dashboard.");
+
+        var username = request.Username.Trim();
+        var email = request.Email.Trim().ToLowerInvariant();
+        var staffId = StaffRoleResolver.Normalize(request.StaffId);
+
+        var usernameOwner = await _users.GetByUsernameAsync(username);
+        if (usernameOwner is not null && usernameOwner.Id != id)
+            throw new UserConflictException("A user with this username already exists.");
+
+        var emailOwner = await _users.GetByEmailAsync(email);
+        if (emailOwner is not null && emailOwner.Id != id)
+            throw new UserConflictException("A user with this email address already exists.");
+
+        var staffIdOwner = await _users.GetByStaffIdAsync(staffId);
+        if (staffIdOwner is not null && staffIdOwner.Id != id)
+            throw new UserConflictException("A user with this Staff ID already exists.");
+
+        if (!StaffRoleResolver.MatchesRole(staffId, request.Role))
+            throw new InvalidOperationException("The selected role must match the Staff ID prefix.");
+
+        var role = await _roles.GetByNameAsync(request.Role)
+            ?? throw new InvalidOperationException($"The role '{request.Role}' is not configured.");
+
+        user.Username = username;
+        user.StaffId = staffId;
+        user.Email = email;
+        user.FirstName = request.FirstName.Trim();
+        user.LastName = request.LastName.Trim();
+        user.Roles.Clear();
+        user.Roles.Add(role);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _users.UpdateAsync(user);
+        return Map(user);
+    }
+
     public async Task<bool> DeleteAsync(Guid id)
     {
         var user = await _users.GetByIdAsync(id);
@@ -121,9 +164,17 @@ public class UserService : IUserService
     public async Task<UserResponse> SetActiveAsync(Guid id, bool isActive)
     {
         var user = await _users.GetByIdAsync(id) ?? throw new KeyNotFoundException();
-        user.IsActive = isActive;
+        if (user.Roles.Any(role => role.Name == "Admin"))
+            throw new InvalidOperationException("Admin accounts cannot be deactivated from the dashboard.");
+        if (isActive)
+            throw new InvalidOperationException("A deactivated Staff ID cannot be activated or reused.");
+
+        var roleName = user.Roles.Select(role => role.Name).SingleOrDefault()
+            ?? throw new InvalidOperationException("The account does not have a configured staff role.");
+
+        user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
-        await _users.UpdateAsync(user);
+        await _users.DeactivateAndReserveStaffIdAsync(user, roleName);
         return Map(user);
     }
 
@@ -154,6 +205,7 @@ public class UserService : IUserService
     private static UserResponse Map(User user) => new()
     {
         Id = user.Id,
+        UserNumber = user.UserNumber,
         Username = user.Username,
         StaffId = user.StaffId,
         Email = user.Email,

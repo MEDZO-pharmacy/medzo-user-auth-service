@@ -99,4 +99,36 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task DeactivateAndReserveStaffIdAsync(User user, string roleName)
+    {
+        if (string.IsNullOrWhiteSpace(user.StaffId))
+            throw new InvalidOperationException("The account does not have a Staff ID to reserve.");
+
+        var now = DateTime.UtcNow;
+        var invitation = await _context.StaffInvitations
+            .FirstOrDefaultAsync(item => item.StaffId == user.StaffId);
+
+        if (invitation is null)
+        {
+            _context.StaffInvitations.Add(new StaffInvitation
+            {
+                Id = Guid.NewGuid(),
+                StaffId = user.StaffId,
+                Role = roleName,
+                IsClaimed = true,
+                CreatedAt = now,
+                ClaimedAt = now
+            });
+        }
+        else
+        {
+            invitation.IsClaimed = true;
+            invitation.ClaimedAt ??= now;
+        }
+
+        user.IsActive = false;
+        user.UpdatedAt = now;
+        await _context.SaveChangesAsync();
+    }
+
 }

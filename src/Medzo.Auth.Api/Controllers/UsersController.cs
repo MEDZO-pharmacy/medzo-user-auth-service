@@ -16,18 +16,52 @@ public class UsersController : ControllerBase
     private readonly IUserService _userService;
     private readonly IValidator<CreateUserRequest> _createUserValidator;
     private readonly IValidator<RegisterUserRequest> _updateUserValidator;
+    private readonly IValidator<UpdateManagedUserRequest> _managedUserValidator;
     private readonly IValidator<StaffInvitationRequest> _staffInvitationValidator;
 
     public UsersController(
         IUserService userService,
         IValidator<CreateUserRequest> createUserValidator,
         IValidator<RegisterUserRequest> updateUserValidator,
+        IValidator<UpdateManagedUserRequest> managedUserValidator,
         IValidator<StaffInvitationRequest> staffInvitationValidator)
     {
         _userService = userService;
         _createUserValidator = createUserValidator;
         _updateUserValidator = updateUserValidator;
+        _managedUserValidator = managedUserValidator;
         _staffInvitationValidator = staffInvitationValidator;
+    }
+
+    [HttpPut("{id:guid}/managed")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<UserResponse>> UpdateManaged(
+        Guid id, [FromBody] UpdateManagedUserRequest request)
+    {
+        var validation = await _managedUserValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+        {
+            foreach (var error in validation.Errors)
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            return ValidationProblem(ModelState);
+        }
+
+        try
+        {
+            return Ok(await _userService.UpdateManagedAsync(id, request));
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(new { message = "User not found." });
+        }
+        catch (UserConflictException exception)
+        {
+            return Conflict(new { code = "duplicate_user", message = exception.Message });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
     }
 
     [HttpPost]
@@ -166,6 +200,10 @@ public class UsersController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<UserResponse>> SetStatus(Guid id, SetUserStatusRequest request)
     {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!request.IsActive && Guid.TryParse(currentUserId, out var parsedUserId) && parsedUserId == id)
+            return BadRequest(new { message = "You cannot deactivate your own Admin account." });
+
         try
         {
             return Ok(await _userService.SetActiveAsync(id, request.IsActive));
@@ -173,6 +211,10 @@ public class UsersController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound(new { message = "User not found." });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
         }
     }
 

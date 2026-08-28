@@ -13,4 +13,5 @@ public interface IUserRepository
     Task<User> AddAsync(User user);
     Task UpdateAsync(User user);
     Task DeleteAsync(User user);
+    Task DeactivateAndReserveStaffIdAsync(User user, string roleName);
 }
