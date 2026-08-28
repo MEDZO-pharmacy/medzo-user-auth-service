@@ -3,6 +3,7 @@ namespace Medzo.Auth.Domain.Entities;
 public class User
 {
     public Guid Id { get; set; }
+    public int UserNumber { get; set; }
     public string Username { get; set; } = string.Empty;
     public string? StaffId { get; set; }
     public string Email { get; set; } = string.Empty;

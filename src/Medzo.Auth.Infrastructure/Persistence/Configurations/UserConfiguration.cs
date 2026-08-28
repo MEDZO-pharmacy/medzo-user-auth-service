@@ -15,6 +15,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Id)
             .ValueGeneratedOnAdd();
 
+        builder.Property(u => u.UserNumber)
+            .UseIdentityColumn(1, 1)
+            .ValueGeneratedOnAdd();
+
+        builder.HasIndex(u => u.UserNumber)
+            .IsUnique();
+
         builder.Property(u => u.Username)
             .IsRequired()
             .HasMaxLength(50);
