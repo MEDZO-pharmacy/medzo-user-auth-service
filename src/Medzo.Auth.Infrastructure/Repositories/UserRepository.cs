@@ -82,7 +82,6 @@ public class UserRepository : IUserRepository
     {
         try
         {
-            _context.Users.Update(user);
             await _context.SaveChangesAsync();
         }
         catch (DbUpdateException exception)

@@ -19,7 +19,7 @@ public sealed class DatabaseExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        if (exception is not DbUpdateException && exception is not SqlException)
+        if (!ContainsDatabaseException(exception))
             return false;
 
         _logger.LogError(exception, "A database operation failed while processing {Path}.",
@@ -34,5 +34,15 @@ public sealed class DatabaseExceptionHandler : IExceptionHandler
         }, cancellationToken);
         return true;
     }
-}
 
+    private static bool ContainsDatabaseException(Exception exception)
+    {
+        for (Exception? current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is DbUpdateException or SqlException)
+                return true;
+        }
+
+        return false;
+    }
+}

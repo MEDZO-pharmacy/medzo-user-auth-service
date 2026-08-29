@@ -7,6 +7,13 @@ DotEnv.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Do not use the machine-wide Windows Event Log for web request diagnostics.
+// Local users may not have permission to write there, and logging must never
+// replace an API response with a dropped connection.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -62,6 +69,14 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception exception)
+{
+    app.Logger.LogCritical(exception, "The Medzo Auth API could not start.");
+    Environment.ExitCode = 1;
+}
 
 public partial class Program;
