@@ -143,8 +143,12 @@ public class UserService : IUserService
         user.Email = email;
         user.FirstName = request.FirstName.Trim();
         user.LastName = request.LastName.Trim();
-        user.Roles.Clear();
-        user.Roles.Add(role);
+        var currentRole = user.Roles.SingleOrDefault();
+        if (currentRole?.Id != role.Id)
+        {
+            user.Roles.Clear();
+            user.Roles.Add(role);
+        }
         user.UpdatedAt = DateTime.UtcNow;
 
         await _users.UpdateAsync(user);

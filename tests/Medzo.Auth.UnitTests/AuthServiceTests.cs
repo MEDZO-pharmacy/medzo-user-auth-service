@@ -71,11 +71,7 @@ public class AuthServiceTests
         _jwtServiceMock.Verify(service => service.GenerateAccessToken(
             It.Is<IEnumerable<Claim>>(claims =>
                 claims.Any(claim => claim.Type == ClaimTypes.NameIdentifier && claim.Value == user.Id.ToString()) &&
-<<<<<<< Updated upstream
-                claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == "User"))), Times.Once);
-=======
                 claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == "Pharmacist"))), Times.Once);
->>>>>>> Stashed changes
     }
 
     [Fact]
@@ -120,11 +116,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-<<<<<<< Updated upstream
-    public async Task RegisterAsync_WithNewUser_ShouldReturnToken()
-    {
-        var role = new Role { Id = Guid.NewGuid(), Name = "Pharmacist" };
-=======
+
     public async Task LoginAsync_WithLegacyGuestRole_ShouldThrow()
     {
         var user = ExistingUser();
@@ -146,10 +138,41 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task RefreshTokenAsync_AfterRoleChange_IssuesSessionWithCurrentRole()
+    {
+        var user = ExistingUser();
+        user.Roles = new List<Role>
+        {
+            new() { Id = "003", Name = "InventoryManager" }
+        };
+        _refreshTokenRepositoryMock.Setup(repository => repository.GetByHashAsync(It.IsAny<string>()))
+            .ReturnsAsync(new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                User = user,
+                TokenHash = "stored-token-hash",
+                CreatedAt = DateTime.UtcNow.AddMinutes(-5),
+                ExpiresAt = DateTime.UtcNow.AddDays(1)
+            });
+        _refreshTokenRepositoryMock.Setup(repository => repository.RotateAsync(
+                It.IsAny<RefreshToken>(), It.IsAny<RefreshToken>()))
+            .ReturnsAsync(true);
+        ConfigureGeneratedTokens(DateTime.UtcNow.AddHours(1), DateTime.UtcNow.AddDays(7));
+
+        var result = await _authService.RefreshTokenAsync("current-refresh-token");
+
+        result.User.Roles.Should().ContainSingle().Which.Should().Be("InventoryManager");
+        _jwtServiceMock.Verify(service => service.GenerateAccessToken(
+            It.Is<IEnumerable<Claim>>(claims =>
+                claims.Any(claim => claim.Type == ClaimTypes.Role && claim.Value == "InventoryManager") &&
+                claims.All(claim => claim.Type != ClaimTypes.Role || claim.Value != "Pharmacist"))), Times.Once);
+    }
+
+    [Fact]
     public async Task RegisterAsync_WithNewUser_ShouldReturnToken()
     {
         var role = new Role { Id = "002", Name = "Pharmacist" };
->>>>>>> Stashed changes
         User? savedUser = null;
         _roleRepositoryMock.Setup(repository => repository.GetByNameAsync("Pharmacist"))
             .ReturnsAsync(role);
@@ -240,10 +263,6 @@ public class AuthServiceTests
         LastName = "User",
         IsActive = true,
         CreatedAt = DateTime.UtcNow,
-<<<<<<< Updated upstream
-        Roles = new List<Role> { new() { Id = Guid.NewGuid(), Name = "User" } }
-=======
         Roles = new List<Role> { new() { Id = "002", Name = "Pharmacist" } }
->>>>>>> Stashed changes
     };
 }

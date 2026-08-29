@@ -18,4 +18,12 @@ public class AuthApiTests : IClassFixture<AdminApiFactory>
         var response = await _client.GetAsync("/health");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task EvaluateSession_WithAuthenticatedUser_ReturnsNoContent()
+    {
+        var response = await _client.GetAsync("/api/auth/session");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
 }

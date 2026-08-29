@@ -2,6 +2,7 @@ using FluentValidation;
 using Medzo.Auth.Application.DTOs;
 using Medzo.Auth.Application.Exceptions;
 using Medzo.Auth.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Medzo.Auth.Api.Controllers;
@@ -96,6 +97,10 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete(RefreshCookieName, RefreshCookieOptions());
         return NoContent();
     }
+
+    [HttpGet("session")]
+    [Authorize]
+    public IActionResult EvaluateSession() => NoContent();
 
     private string? ReadRefreshToken()
     {
