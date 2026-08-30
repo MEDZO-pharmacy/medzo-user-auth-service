@@ -3,7 +3,7 @@ name: Build and Deploy to Azure App Service
 on:
   push:
     branches:
-      - main # Change this if your default branch is different
+      - Dev # Change this if your default branch is different
 
 env:
   AZURE_WEBAPP_NAME: 'medzo1' # Replace with your Azure Web App Name
