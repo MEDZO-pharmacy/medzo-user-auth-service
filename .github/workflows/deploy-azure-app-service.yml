@@ -67,6 +67,18 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Validate Azure OpenID Connect variables
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          : "${AZURE_CLIENT_ID:?Add repository Actions variable AZURE_CLIENT_ID}"
+          : "${AZURE_TENANT_ID:?Add repository Actions variable AZURE_TENANT_ID}"
+          : "${AZURE_SUBSCRIPTION_ID:?Add repository Actions variable AZURE_SUBSCRIPTION_ID}"
+
       - name: Log in to Azure using OpenID Connect
         uses: azure/login@v2
         with:
