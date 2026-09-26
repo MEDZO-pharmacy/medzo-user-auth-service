@@ -15,15 +15,18 @@ public class AuthController : ControllerBase
     private readonly IAuthService _authService;
     private readonly IValidator<LoginRequest> _loginValidator;
     private readonly IValidator<RegisterUserRequest> _registerValidator;
+    private readonly IWebHostEnvironment _environment;
 
     public AuthController(
         IAuthService authService,
         IValidator<LoginRequest> loginValidator,
-        IValidator<RegisterUserRequest> registerValidator)
+        IValidator<RegisterUserRequest> registerValidator,
+        IWebHostEnvironment environment)
     {
         _authService = authService;
         _loginValidator = loginValidator;
         _registerValidator = registerValidator;
+        _environment = environment;
     }
 
     [HttpPost("login")]
@@ -119,12 +122,15 @@ public class AuthController : ControllerBase
         // The deployed SPA and API use different Azure hostnames. Cross-site
         // refresh requests therefore need SameSite=None over HTTPS. Local HTTP
         // development cannot use a Secure cookie, so it remains Lax.
-        var isHttps = Request.IsHttps;
+        // Azure terminates TLS before forwarding the request to this process.
+        // Production is HTTPS-only at the ingress, so never downgrade this
+        // cross-site cookie if proxy headers are missing or filtered.
+        var useSecureCrossSiteCookie = !_environment.IsDevelopment() || Request.IsHttps;
         return new CookieOptions
         {
             HttpOnly = true,
-            Secure = isHttps,
-            SameSite = isHttps ? SameSiteMode.None : SameSiteMode.Lax,
+            Secure = useSecureCrossSiteCookie,
+            SameSite = useSecureCrossSiteCookie ? SameSiteMode.None : SameSiteMode.Lax,
             Path = "/api/auth",
             MaxAge = TimeSpan.FromDays(7),
             IsEssential = true
