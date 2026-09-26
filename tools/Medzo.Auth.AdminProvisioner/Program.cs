@@ -17,7 +17,10 @@ if (password.Length < 8)
     throw new InvalidOperationException("The Admin password must contain at least eight characters.");
 
 var options = new DbContextOptionsBuilder<AuthDbContext>()
-    .UseSqlServer(connectionString)
+    .UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure(
+        maxRetryCount: 6,
+        maxRetryDelay: TimeSpan.FromSeconds(10),
+        errorNumbersToAdd: null))
     .Options;
 await using var database = new AuthDbContext(options);
 await database.Database.MigrateAsync();

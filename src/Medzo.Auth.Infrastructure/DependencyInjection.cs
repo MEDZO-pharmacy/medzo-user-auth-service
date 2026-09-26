@@ -38,7 +38,15 @@ public static class DependencyInjection
         services.AddDbContext<AuthDbContext>(options =>
             options.UseSqlServer(
                 connectionString,
-                b => b.MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName)));
+                sqlOptions => sqlOptions
+                    .MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName)
+                    // Azure SQL Serverless can return 40613 while it resumes
+                    // after auto-pause. Retry transient SQL errors long enough
+                    // for the database to become available.
+                    .EnableRetryOnFailure(
+                        maxRetryCount: 6,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null)));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();

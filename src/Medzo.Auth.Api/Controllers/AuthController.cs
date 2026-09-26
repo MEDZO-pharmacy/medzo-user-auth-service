@@ -114,15 +114,22 @@ public class AuthController : ControllerBase
         Response.Cookies.Append(RefreshCookieName, refreshToken, RefreshCookieOptions());
     }
 
-    private CookieOptions RefreshCookieOptions() => new()
+    private CookieOptions RefreshCookieOptions()
     {
-        HttpOnly = true,
-        Secure = Request.IsHttps,
-        SameSite = SameSiteMode.Strict,
-        Path = "/api/auth",
-        MaxAge = TimeSpan.FromDays(7),
-        IsEssential = true
-    };
+        // The deployed SPA and API use different Azure hostnames. Cross-site
+        // refresh requests therefore need SameSite=None over HTTPS. Local HTTP
+        // development cannot use a Secure cookie, so it remains Lax.
+        var isHttps = Request.IsHttps;
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = isHttps,
+            SameSite = isHttps ? SameSiteMode.None : SameSiteMode.Lax,
+            Path = "/api/auth",
+            MaxAge = TimeSpan.FromDays(7),
+            IsEssential = true
+        };
+    }
 
     private static ValidationProblemDetails CreateValidationProblem(
         FluentValidation.Results.ValidationResult validation)
