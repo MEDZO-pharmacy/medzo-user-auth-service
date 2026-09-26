@@ -2,6 +2,7 @@ using Medzo.Auth.Api.Configuration;
 using Medzo.Auth.Api.ExceptionHandling;
 using Medzo.Auth.Api.Extensions;
 using Medzo.Auth.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 
 DotEnv.Load();
 
@@ -21,6 +22,16 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DatabaseExceptionHandler>();
 builder.Services.AddHealthChecks();
+
+// Azure Container Apps terminates TLS at its ingress and forwards the original
+// scheme in X-Forwarded-Proto. Process it before any request code decides
+// whether a browser cookie must be Secure/SameSite=None.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 const string frontendCorsPolicy = "Frontend";
 var frontendOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -49,6 +60,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseCors(frontendCorsPolicy);
 
