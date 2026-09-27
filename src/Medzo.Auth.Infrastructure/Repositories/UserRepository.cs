@@ -66,6 +66,14 @@ public class UserRepository : IUserRepository
     {
         try
         {
+            if (_context.Database.IsSqlite() && user.UserNumber == 0)
+            {
+                user.UserNumber = (await _context.Users
+                    .OrderByDescending(existing => existing.UserNumber)
+                    .Select(existing => existing.UserNumber)
+                    .FirstOrDefaultAsync()) + 1;
+            }
+
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
             return user;

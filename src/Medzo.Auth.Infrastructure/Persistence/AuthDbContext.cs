@@ -20,5 +20,14 @@ public class AuthDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AuthDbContext).Assembly);
+
+        if (Database.IsSqlite())
+        {
+            modelBuilder.Entity<RefreshToken>()
+                .Property(token => token.RowVersion)
+                .IsConcurrencyToken()
+                .ValueGeneratedNever()
+                .HasDefaultValue(new byte[] { 0 });
+        }
     }
 }

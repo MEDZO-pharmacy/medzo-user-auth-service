@@ -2,6 +2,7 @@ using Medzo.Auth.Api.Configuration;
 using Medzo.Auth.Api.ExceptionHandling;
 using Medzo.Auth.Api.Extensions;
 using Medzo.Auth.Infrastructure;
+using Medzo.Auth.Infrastructure.Persistence;
 
 DotEnv.Load();
 
@@ -47,6 +48,13 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+if (builder.Configuration["Database:Provider"]?.Equals("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await db.Database.EnsureCreatedAsync();
+}
 
 // Configure the HTTP request pipeline
 app.UseExceptionHandler();

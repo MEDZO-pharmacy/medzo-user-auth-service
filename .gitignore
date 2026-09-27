@@ -60,3 +60,6 @@ TestResult.xml
 # Node (frontend)
 node_modules/
 dist/
+
+# Local runtime data
+.appdata/

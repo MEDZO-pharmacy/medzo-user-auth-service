@@ -12,15 +12,31 @@ var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__De
 if (string.IsNullOrWhiteSpace(connectionString))
     throw new InvalidOperationException("ConnectionStrings__DefaultConnection is not configured.");
 
-var password = ReadPassword();
+var password = Environment.GetEnvironmentVariable("Admin__Password") ?? ReadPassword();
 if (password.Length < 8)
     throw new InvalidOperationException("The Admin password must contain at least eight characters.");
 
-var options = new DbContextOptionsBuilder<AuthDbContext>()
-    .UseSqlServer(connectionString)
-    .Options;
+var databaseProvider = Environment.GetEnvironmentVariable("Database__Provider") ?? "SqlServer";
+var optionsBuilder = new DbContextOptionsBuilder<AuthDbContext>();
+if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    optionsBuilder.UseSqlite(connectionString);
+}
+else
+{
+    optionsBuilder.UseSqlServer(connectionString);
+}
+
+var options = optionsBuilder.Options;
 await using var database = new AuthDbContext(options);
-await database.Database.MigrateAsync();
+if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+{
+    await database.Database.EnsureCreatedAsync();
+}
+else
+{
+    await database.Database.MigrateAsync();
+}
 
 var adminRole = await database.Roles.SingleAsync(role => role.Id == "001" && role.Name == "Admin");
 var matches = await database.Users
@@ -33,11 +49,13 @@ if (matches.Select(user => user.Id).Distinct().Count() > 1)
     throw new InvalidOperationException("The configured Admin username, Staff ID, or email belongs to different accounts.");
 
 var admin = matches.SingleOrDefault();
+    var nextUserNumber = (await database.Users.OrderByDescending(user => user.UserNumber).Select(user => user.UserNumber).FirstOrDefaultAsync()) + 1;
 if (admin is null)
 {
     admin = new User
     {
         Id = Guid.NewGuid(),
+        UserNumber = nextUserNumber,
         CreatedAt = DateTime.UtcNow
     };
     await database.Users.AddAsync(admin);

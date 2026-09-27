@@ -35,10 +35,19 @@ public static class DependencyInjection
         }
 
         // Database
+        var databaseProvider = configuration["Database:Provider"] ?? "SqlServer";
         services.AddDbContext<AuthDbContext>(options =>
+        {
+            if (databaseProvider.Equals("Sqlite", StringComparison.OrdinalIgnoreCase))
+            {
+                options.UseSqlite(connectionString);
+                return;
+            }
+
             options.UseSqlServer(
                 connectionString,
-                b => b.MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName)));
+                b => b.MigrationsAssembly(typeof(AuthDbContext).Assembly.FullName));
+        });
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
