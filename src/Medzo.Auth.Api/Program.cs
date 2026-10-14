@@ -2,6 +2,8 @@ using Medzo.Auth.Api.Configuration;
 using Medzo.Auth.Api.ExceptionHandling;
 using Medzo.Auth.Api.Extensions;
 using Medzo.Auth.Infrastructure;
+using Medzo.Auth.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
 
 DotEnv.Load();
@@ -58,6 +60,15 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+// Apply pending schema changes before accepting requests. This is enabled only
+// for the single-replica production deployment through configuration.
+if (builder.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var database = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await database.Database.MigrateAsync();
+}
 
 // Configure the HTTP request pipeline
 app.UseForwardedHeaders();

@@ -94,6 +94,17 @@ jobs:
           imageToDeploy: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           registryUrl: ${{ env.REGISTRY }}
 
+      - name: Enable production database migrations
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az containerapp update \
+              --name "${{ env.CONTAINER_APP_NAME }}" \
+              --resource-group "${{ env.RESOURCE_GROUP }}" \
+              --container-name medzo-auth-service \
+              --set-env-vars Database__MigrateOnStartup=true \
+              --output none
+
       - name: Verify deployed health endpoint
         uses: azure/cli@v2
         with:
