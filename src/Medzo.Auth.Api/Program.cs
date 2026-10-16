@@ -5,6 +5,7 @@ using Medzo.Auth.Infrastructure;
 using Medzo.Auth.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.OpenApi.Models;
 
 DotEnv.Load();
 
@@ -20,7 +21,26 @@ builder.Logging.AddDebug();
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Medzo Authentication API", Version = "v1" });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Enter a Medzo JWT bearer token.",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+        }] = Array.Empty<string>()
+    });
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DatabaseExceptionHandler>();
 builder.Services.AddHealthChecks();
@@ -80,11 +100,10 @@ if (httpsPort.HasValue)
     app.UseHttpsRedirection();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Public API documentation is intentionally available in every environment so
+// evaluators and API consumers can reach /swagger without a local build.
+app.UseSwagger();
+app.UseSwaggerUI(options => options.SwaggerEndpoint("/swagger/v1/swagger.json", "Medzo Authentication API v1"));
 
 app.UseAuthentication();
 app.UseAuthorization();
