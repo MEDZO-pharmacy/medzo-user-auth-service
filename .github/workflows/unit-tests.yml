@@ -1,0 +1,25 @@
+name: Auth Unit Tests
+
+on:
+  push:
+    branches: [feature/se3112-unit-mocking]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Run xUnit tests and collect Coverlet coverage
+        run: dotnet test tests/Medzo.Auth.UnitTests/Medzo.Auth.UnitTests.csproj --collect:"XPlat Code Coverage" --results-directory TestResults
+      - name: Upload test and coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-unit-test-evidence
+          path: TestResults
+          if-no-files-found: warn
