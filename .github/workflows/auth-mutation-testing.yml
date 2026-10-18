@@ -1,0 +1,66 @@
+name: Auth Mutation Testing
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - auth-mutation-testing
+    paths:
+      - 'src/Medzo.Auth.Application/**'
+      - 'tests/Medzo.Auth.UnitTests/**'
+      - 'dotnet-tools.json'
+      - 'Medzo.Auth.sln'
+      - '.github/workflows/auth-mutation-testing.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/Medzo.Auth.Application/**'
+      - 'tests/Medzo.Auth.UnitTests/**'
+      - 'dotnet-tools.json'
+      - 'Medzo.Auth.sln'
+      - '.github/workflows/auth-mutation-testing.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation-test:
+    name: Stryker.NET quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore local tools and packages
+        run: |
+          dotnet tool restore
+          dotnet restore Medzo.Auth.sln
+
+      - name: Run auth unit tests
+        run: dotnet test tests/Medzo.Auth.UnitTests/Medzo.Auth.UnitTests.csproj --configuration Release --no-restore
+
+      - name: Run Stryker.NET mutation tests
+        working-directory: tests/Medzo.Auth.UnitTests
+        run: dotnet stryker --skip-version-check
+
+      - name: Upload mutation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-mutation-report-${{ github.run_number }}
+          path: tests/Medzo.Auth.UnitTests/StrykerOutput/**/reports/
+          if-no-files-found: warn
+          retention-days: 14

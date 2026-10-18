@@ -79,6 +79,70 @@ When `POST /api/users` finds another account with the same first and last name, 
 resubmit the same request with `confirmPotentialDuplicate: true`. Usernames and email addresses
 remain strictly unique and cannot be overridden.
 
+## Mutation Testing
+
+**Owner:** IT24101508
+
+**Tool:** Stryker.NET 5 with xUnit, Moq, and FluentAssertions
+
+Mutation testing deliberately changes production logic and reruns the relevant tests. A killed
+mutant proves that a test detected the injected fault; a survivor identifies an assertion gap,
+an untested branch, or a behavior that cannot be distinguished reliably by the current design.
+
+The configuration at `tests/Medzo.Auth.UnitTests/stryker-config.json` targets two
+security-critical application classes:
+
+- `Services/AuthService.cs` for login, registration, refresh-token rotation, revocation, claims,
+  and role-based website access;
+- `Services/StaffRoleResolver.cs` for staff-ID normalization, validation, role mapping, and signup
+  eligibility.
+
+Install the pinned repository-local tool and run the quality gate:
+
+```powershell
+dotnet tool restore
+dotnet test tests/Medzo.Auth.UnitTests/Medzo.Auth.UnitTests.csproj --configuration Release
+Push-Location tests/Medzo.Auth.UnitTests
+dotnet stryker --skip-version-check
+Pop-Location
+```
+
+Stryker writes timestamped HTML, JSON, and Markdown reports under
+`tests/Medzo.Auth.UnitTests/StrykerOutput/<timestamp>/reports/`. The directory is ignored by Git.
+
+### Verified results
+
+| Metric | Baseline | Strengthened suite |
+| --- | ---: | ---: |
+| Unit tests | 23 | 73 |
+| Scored mutants | 97 | 97 |
+| Killed | 52 | 96 |
+| Survived | 23 | 1 |
+| No coverage | 22 | 0 |
+| Timed out | 0 | 0 |
+| Mutation score | 53.61% | **98.97%** |
+
+The single survivor changes refresh-token expiry from `ExpiresAt <= now` to `ExpiresAt < now`.
+Distinguishing those expressions requires the token expiry to equal the private `DateTime.UtcNow`
+value captured inside the method at the exact tick. Without changing production code to inject a
+clock, such a test would be timing-dependent and unreliable. The boundary is documented rather
+than hidden or excluded.
+
+### Automated quality gate
+
+`.github/workflows/auth-mutation-testing.yml` runs on relevant branch pushes, pull requests into
+`main`, and manual dispatch. It restores the pinned tools, runs all auth unit tests, executes
+Stryker with an 80% break threshold, and uploads the generated reports for 14 days even if the
+quality gate fails.
+
+### Two-minute live demo
+
+1. Run the unit-test command and show all 73 isolated tests passing.
+2. Run `dotnet stryker --skip-version-check` from `tests/Medzo.Auth.UnitTests`.
+3. Explain the final killed, survived, no-coverage, and mutation-score values.
+4. Open the newest `mutation-report.html` and inspect the remaining time-boundary survivor.
+5. Contrast the 53.61% baseline with 98.97% to show how mutation feedback improved the suite.
+
 ## License
 
 Proprietary — Medzo Pharmacy © 2026
