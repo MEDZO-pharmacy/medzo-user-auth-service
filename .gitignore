@@ -37,6 +37,7 @@ bld/
 *.VisualState.xml
 TestResult.xml
 [Tt]est[Rr]esult*/
+**/StrykerOutput/
 
 # User-specific
 *.rsuser

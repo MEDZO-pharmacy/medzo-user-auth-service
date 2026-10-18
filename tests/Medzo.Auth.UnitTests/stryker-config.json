@@ -1,0 +1,25 @@
+{
+  "stryker-config": {
+    "solution": "../../Medzo.Auth.sln",
+    "project": "Medzo.Auth.Application.csproj",
+    "mutate": [
+      "**/Services/AuthService.cs",
+      "**/Services/StaffRoleResolver.cs"
+    ],
+    "mutation-level": "Standard",
+    "reporters": [
+      "progress",
+      "cleartext",
+      "html",
+      "json",
+      "markdown"
+    ],
+    "thresholds": {
+      "high": 90,
+      "low": 80,
+      "break": 80
+    },
+    "concurrency": 2,
+    "configuration": "Release"
+  }
+}
