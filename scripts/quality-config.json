@@ -1,0 +1,5 @@
+{
+  "name": "Auth",
+  "sourceProject": "src/Medzo.Auth.Api/Medzo.Auth.Api.csproj",
+  "testProject": "tests/Medzo.Auth.UnitTests/Medzo.Auth.UnitTests.csproj"
+}
